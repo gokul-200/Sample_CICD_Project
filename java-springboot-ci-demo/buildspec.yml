@@ -1,13 +1,41 @@
+
 version: 0.2
+
+env:
+  variables:
+    IMAGE_NAME: java-springboot-ci-demo
+    IMAGE_TAG: latest
+
+  parameter-store:
+    DOCKERHUB_USERNAME: /CodeBuild/dockerhub-username
+    DOCKERHUB_TOKEN: /CodeBuild/dockerhub-token
 
 phases:
   install:
     runtime-versions:
       java: corretto17
+    commands:
+      - echo Installing Java and Maven
+
+  pre_build:
+    commands:
+      - echo Logging in to Docker Hub
+      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
   build:
     commands:
+      - echo Building Spring Boot Application
       - mvn -B clean package
+      - echo Building Docker Image
+      - docker build -t "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG" .
 
+  post_build:
+    commands:
+      - echo Pushing Docker Image to Docker Hub
+      - docker push "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG"
+      - echo Docker image pushed successfully
+      - docker logout
 artifacts:
   files:
-    - target/demo-0.0.1-SNAPSHOT.jar
+    - target/*.jar
+  discard-paths: yes
