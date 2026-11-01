@@ -25,9 +25,9 @@ phases:
   build:
     commands:
       - echo Building Spring Boot Application
-      - mvn -B clean package
+      - cd java-springboot-ci && mvn -B clean package
       - echo Building Docker Image
-      - docker build -t "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG" .
+      - cd java-springboot-ci && docker build -t "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG" .
 
   post_build:
     commands:
@@ -35,7 +35,9 @@ phases:
       - docker push "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG"
       - echo Docker image pushed successfully
       - docker logout
+
 artifacts:
+  base-directory: java-springboot-ci/target
   files:
-    - target/*.jar
+    - "*.jar"
   discard-paths: yes
