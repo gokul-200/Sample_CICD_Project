@@ -1,10 +1,54 @@
 
+# version: 0.2
+
+# env:
+#   variables:
+#     IMAGE_NAME: java-springboot-ci-demo
+#     IMAGE_TAG: latest
+
+#   parameter-store:
+#     DOCKERHUB_USERNAME: /CodeBuild/dockerhub-username
+#     DOCKERHUB_TOKEN: /CodeBuild/dockerhub-token
+
+# phases:
+#   install:
+#     runtime-versions:
+#       java: corretto17
+#     commands:
+#       - java -version
+#       - mvn -version
+
+#   pre_build:
+#     commands:
+#       - echo Logging in to Docker Hub
+#       - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
+#   build:
+#     commands:
+#       - echo Building Spring Boot Application
+#       - cd "$CODEBUILD_SRC_DIR/java-springboot-ci-demo"
+#       - mvn -B clean package
+#       - echo Building Docker Image
+#       - docker build -t "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG" .
+
+#   post_build:
+#     commands:
+#       - echo Pushing Docker Image to Docker Hub
+#       - docker push "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG"
+#       - echo Docker image pushed successfully
+#       - docker logout
+
+# artifacts:
+#   base-directory: java-springboot-ci-demo/target
+#   files:
+#     - "*.jar"
+#   discard-paths: yes
+
 version: 0.2
 
 env:
   variables:
     IMAGE_NAME: java-springboot-ci-demo
-    IMAGE_TAG: latest
 
   parameter-store:
     DOCKERHUB_USERNAME: /CodeBuild/dockerhub-username
@@ -22,6 +66,7 @@ phases:
     commands:
       - echo Logging in to Docker Hub
       - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+      - export IMAGE_TAG="$CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   build:
     commands:
@@ -35,11 +80,12 @@ phases:
     commands:
       - echo Pushing Docker Image to Docker Hub
       - docker push "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG"
-      - echo Docker image pushed successfully
+      - echo Creating ECS image definitions
+      - printf '[{"name":"spring-boot-container","imageUri":"%s"}]' "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG" > "$CODEBUILD_SRC_DIR/imagedefinitions.json"
       - docker logout
+      - echo Build and image publishing completed
 
 artifacts:
-  base-directory: java-springboot-ci-demo/target
   files:
-    - "*.jar"
-  discard-paths: yes
+    - imagedefinitions.json
+    - java-springboot-ci-demo/target/*.jar
