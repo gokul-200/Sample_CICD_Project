@@ -15,7 +15,8 @@ phases:
     runtime-versions:
       java: corretto17
     commands:
-      - echo Installing Java and Maven
+      - java -version
+      - mvn -version
 
   pre_build:
     commands:
@@ -25,9 +26,10 @@ phases:
   build:
     commands:
       - echo Building Spring Boot Application
-      - cd java-springboot-ci-demo && mvn -B clean package
+      - cd "$CODEBUILD_SRC_DIR/java-springboot-ci-demo"
+      - mvn -B clean package
       - echo Building Docker Image
-      - cd java-springboot-ci-demo && docker build -t "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG" .
+      - docker build -t "$DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG" .
 
   post_build:
     commands:
@@ -41,4 +43,3 @@ artifacts:
   files:
     - "*.jar"
   discard-paths: yes
-
